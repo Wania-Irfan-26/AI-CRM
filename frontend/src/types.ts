@@ -97,5 +97,5 @@ export interface Lead {
   followUp?: FollowUp | null;
 }
 
-export type NavTab = 'leads' | 'ai-emails' | 'approved' | 'rejected' | 'settings';
+export type NavTab = 'dashboard' | 'leads' | 'ai-emails' | 'approved' | 'rejected' | 'settings';
 export type FilterTab = 'all' | 'high-score' | 'fintech' | 'supply-chain';

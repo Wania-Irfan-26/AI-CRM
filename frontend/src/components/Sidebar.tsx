@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavTab } from '../types';
-import { Users, Bot, CheckCircle, XCircle, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Bot, CheckCircle, XCircle, Settings } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -55,6 +55,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation Links */}
         <nav id="sidebar-nav" className="flex flex-col gap-1 px-4">
+          <button
+            id="nav-dashboard-btn"
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition-colors text-left ${
+              activeTab === 'dashboard'
+                ? 'bg-[#d4af37] text-[#554300] font-semibold'
+                : 'text-[#d0c5af] hover:bg-[#262a33] hover:text-[#dfe2ee]'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="font-['Hanken_Grotesk'] text-[13px] font-medium">Dashboard</span>
+            </div>
+          </button>
+
           <button
             id="nav-leads-btn"
             onClick={() => setActiveTab('leads')}

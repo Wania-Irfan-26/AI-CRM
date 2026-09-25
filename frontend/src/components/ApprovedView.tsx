@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lead, Reply, Classification, FollowUp } from '../types';
-import { CheckCircle2, Send, Mail, RotateCw, MessageSquare, Clock, ChevronUp, Calendar, CheckCircle, X } from 'lucide-react';
+import { CheckCircle2, Send, Mail, RotateCw, MessageSquare, Clock, ChevronUp, ChevronDown, Calendar, CheckCircle, X } from 'lucide-react';
 import { fetchReplies, generateFollowUp, approveFollowUp, cancelFollowUp } from '../services/api';
 
 interface ApprovedViewProps {
   approvedLeads: Lead[];
+  focusLeadId?: string | null;
+  onFocusHandled?: () => void;
 }
 
 interface ReplyState {
@@ -167,6 +169,7 @@ function FollowUpPanel({ leadId, initialFollowUp }: FollowUpPanelProps) {
   const [body, setBody] = useState(initialFollowUp?.follow_up_body ?? '');
   const [busy, setBusy] = useState<'generating' | 'approving' | 'cancelling' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bodyExpanded, setBodyExpanded] = useState(false);
 
   const status = followUp?.follow_up_status ?? null;
 
@@ -332,25 +335,49 @@ function FollowUpPanel({ leadId, initialFollowUp }: FollowUpPanelProps) {
         </div>
       )}
 
-      {/* Already sent */}
+      {/* Already sent — with expandable body */}
       {status === 'SENT' && (
-        <div className="px-4 py-3 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-[#58e7aa]" />
-            <p className="font-['Hanken_Grotesk'] text-[13px] font-semibold text-[#58e7aa]">
-              Follow-up email sent.
-            </p>
+        <div className="px-4 py-3 flex flex-col gap-2">
+          {/* Status row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-[#58e7aa]" />
+              <p className="font-['Hanken_Grotesk'] text-[13px] font-semibold text-[#58e7aa]">
+                Follow-up sent
+              </p>
+            </div>
+            <button
+              onClick={() => setBodyExpanded((v) => !v)}
+              className="flex items-center gap-1 font-['Hanken_Grotesk'] text-[11px] text-[#99907c] hover:text-[#dfe2ee] transition-colors"
+            >
+              {bodyExpanded ? (
+                <><ChevronUp className="w-3.5 h-3.5" /> Hide</>
+              ) : (
+                <><ChevronDown className="w-3.5 h-3.5" /> View Follow-up</>
+              )}
+            </button>
           </div>
-          {followUp?.follow_up_sent_at && (
-            <p className="font-['Hanken_Grotesk'] text-[11px] text-[#99907c] flex items-center gap-1 ml-6">
-              <Clock className="w-3 h-3" />
-              {followUp.follow_up_sent_at}
-            </p>
-          )}
+
+          {/* Subject + sent time — always visible */}
           {followUp?.follow_up_subject && (
             <p className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af] ml-6 italic">
               "{followUp.follow_up_subject}"
             </p>
+          )}
+          {followUp?.follow_up_sent_at && (
+            <p className="font-['Hanken_Grotesk'] text-[11px] text-[#99907c] flex items-center gap-1 ml-6">
+              <Clock className="w-3 h-3" />
+              {_formatTimestamp(followUp.follow_up_sent_at)}
+            </p>
+          )}
+
+          {/* Expanded body */}
+          {bodyExpanded && followUp?.follow_up_body && (
+            <div className="mt-2 ml-6 p-3 rounded-lg bg-[#0a0e16] border border-white/5">
+              <p className="font-['Hanken_Grotesk'] text-[12px] text-[#dfe2ee] leading-relaxed whitespace-pre-wrap">
+                {followUp.follow_up_body}
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -358,13 +385,38 @@ function FollowUpPanel({ leadId, initialFollowUp }: FollowUpPanelProps) {
   );
 }
 
-export const ApprovedView: React.FC<ApprovedViewProps> = ({ approvedLeads }) => {
+export const ApprovedView: React.FC<ApprovedViewProps> = ({ approvedLeads, focusLeadId, onFocusHandled }) => {
   // Per-lead reply state keyed by lead.id
   const [replyStates, setReplyStates] = useState<Record<string, ReplyState>>({});
+  // Refs for each lead card — used for scroll-to on focus
+  const leadRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const setReplyState = (leadId: string, state: ReplyState) => {
     setReplyStates((prev) => ({ ...prev, [leadId]: state }));
   };
+
+  // When focusLeadId arrives, auto-expand that lead's reply and scroll to it
+  useEffect(() => {
+    if (!focusLeadId) return;
+    const lead = approvedLeads.find((l) => l.id === focusLeadId);
+    if (!lead) return;
+
+    // Auto-expand the reply panel
+    setReplyState(focusLeadId, {
+      status: lead.reply ? 'found' : 'idle',
+      reply: lead.reply ?? undefined,
+      expanded: true,
+    });
+
+    // Scroll after a short tick to let render complete
+    setTimeout(() => {
+      const el = leadRefs.current[focusLeadId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      onFocusHandled?.();
+    }, 100);
+  }, [focusLeadId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCheckReply = async (lead: Lead) => {
     // If already found and expanded, do nothing (collapse is handled separately)
@@ -433,6 +485,7 @@ export const ApprovedView: React.FC<ApprovedViewProps> = ({ approvedLeads }) => 
           return (
             <div
               key={lead.id}
+              ref={(el) => { leadRefs.current[lead.id] = el; }}
               className="rounded-xl bg-[#181c24] border border-white/5 shadow-sm hover:border-white/10 transition-colors overflow-hidden"
             >
               {/* Lead row */}

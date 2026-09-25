@@ -14,18 +14,21 @@ import { LeadsView } from './components/LeadsView';
 import { ApprovedView } from './components/ApprovedView';
 import { RejectedView } from './components/RejectedView';
 import { SettingsView } from './components/SettingsView';
+import { DashboardView } from './components/DashboardView';
 
 export default function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<NavTab>('ai-emails');
+  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [activeLeadId, setActiveLeadId] = useState<string>('');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  // focusLeadId: navigate to Approved and expand this lead automatically
+  const [focusLeadId, setFocusLeadId] = useState<string | null>(null);
 
   // Fetch leads from the FastAPI backend on mount
   useEffect(() => {
@@ -214,6 +217,16 @@ export default function App() {
         />
 
         <main className="w-full pt-16 bg-[#0f131c] px-6 min-h-screen">
+          {activeTab === 'dashboard' && (
+            <DashboardView
+              onNavigate={setActiveTab}
+              onActionClick={(leadId) => {
+                setFocusLeadId(leadId);
+                setActiveTab('approved');
+              }}
+            />
+          )}
+
           {activeTab === 'ai-emails' && (
             <QueueView
               leads={leads}
@@ -238,7 +251,13 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'approved' && <ApprovedView approvedLeads={approvedLeads} />}
+          {activeTab === 'approved' && (
+            <ApprovedView
+              approvedLeads={approvedLeads}
+              focusLeadId={focusLeadId}
+              onFocusHandled={() => setFocusLeadId(null)}
+            />
+          )}
 
           {activeTab === 'rejected' && (
             <RejectedView

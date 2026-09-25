@@ -309,3 +309,87 @@ export async function cancelFollowUp(leadId: string): Promise<void> {
     throw new Error(data.detail || `Follow-up cancel failed (HTTP ${response.status})`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Dashboard types — mirrors GET /api/dashboard response shape
+// ---------------------------------------------------------------------------
+
+export interface DashboardKpis {
+  total_leads: number;
+  ai_processed: number;
+  emails_sent: number;
+  replies_received: number;
+  interested_leads: number;
+  followups_pending: number;
+}
+
+export interface DashboardFunnel {
+  leads: number;
+  ai_processed: number;
+  emails_sent: number;
+  replies: number;
+  interested: number;
+  followups: number;
+}
+
+export interface DashboardReplyBreakdown {
+  INTERESTED: number;
+  NEEDS_INFO: number;
+  FOLLOW_UP_LATER: number;
+  NOT_INTERESTED: number;
+  BOUNCE: number;
+  UNCLEAR: number;
+}
+
+export interface DashboardFollowupBreakdown {
+  PENDING: number;
+  APPROVED: number;
+  SENT: number;
+  CANCELLED: number;
+}
+
+export interface DashboardActivity {
+  type: string;
+  lead_id: string;
+  company: string;
+  contact: string;
+  timestamp: string;
+  description: string;
+}
+
+export interface DashboardActionItem {
+  lead_id: string;
+  company: string;
+  contact: string;
+  email: string;
+  category: string | null;
+  priority: number;
+  reason: string;
+  follow_up_status: string | null;
+}
+
+export interface DashboardData {
+  kpis: DashboardKpis;
+  funnel: DashboardFunnel;
+  reply_breakdown: DashboardReplyBreakdown;
+  followup_breakdown: DashboardFollowupBreakdown;
+  recent_activity: DashboardActivity[];
+  action_required: DashboardActionItem[];
+}
+
+/**
+ * Fetch all dashboard metrics from the FastAPI backend.
+ * Calls GET /api/dashboard — read-only, no side effects.
+ */
+export async function fetchDashboard(): Promise<DashboardData> {
+  const response = await fetch(`${BASE_URL}/api/dashboard`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || `Failed to fetch dashboard (HTTP ${response.status})`
+    );
+  }
+
+  return response.json() as Promise<DashboardData>;
+}
