@@ -16,10 +16,15 @@ import { RejectedView } from './components/RejectedView';
 import { SettingsView } from './components/SettingsView';
 import { DashboardView } from './components/DashboardView';
 
+// Persist sidebar + theme across refreshes
+const SIDEBAR_KEY = 'crm_sidebar_collapsed';
+const THEME_KEY   = 'crm_theme';
+
 export default function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [activeLeadId, setActiveLeadId] = useState<string>('');
@@ -27,8 +32,32 @@ export default function App() {
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  // focusLeadId: navigate to Approved and expand this lead automatically
   const [focusLeadId, setFocusLeadId] = useState<string | null>(null);
+
+  // Sidebar collapse state — persisted
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem(SIDEBAR_KEY) === 'true';
+  });
+
+  // Theme state — persisted
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem(THEME_KEY) as 'dark' | 'light') ?? 'dark';
+  });
+
+  // Apply sidebar width CSS variable + theme attribute whenever they change
+  useEffect(() => {
+    const width = sidebarCollapsed ? '3.5rem' : '15rem';
+    document.documentElement.style.setProperty('--sidebar-width', width);
+    localStorage.setItem(SIDEBAR_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
+
+  const toggleSidebar = () => setSidebarCollapsed((v) => !v);
+  const toggleTheme   = () => setTheme((t) => t === 'dark' ? 'light' : 'dark');
 
   // Fetch leads from the FastAPI backend on mount
   useEffect(() => {
@@ -87,9 +116,10 @@ export default function App() {
         if (remainingPending.length > 0) setActiveLeadId(remainingPending[0].id);
       })
       .catch((err: unknown) => {
-        alert(
-          `Failed to send email:\n${err instanceof Error ? err.message : String(err)}`
+        setActionError(
+          `Could not send email. ${err instanceof Error ? err.message : 'Please retry.'}`
         );
+        setTimeout(() => setActionError(null), 5000);
       });
   };
 
@@ -105,9 +135,10 @@ export default function App() {
         if (remainingPending.length > 0) setActiveLeadId(remainingPending[0].id);
       })
       .catch((err: unknown) => {
-        alert(
-          `Failed to reject lead:\n${err instanceof Error ? err.message : String(err)}`
+        setActionError(
+          `Could not reject lead. ${err instanceof Error ? err.message : 'Please retry.'}`
         );
+        setTimeout(() => setActionError(null), 5000);
       });
   };
 
@@ -152,11 +183,11 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0f131c] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 rounded-full border-2 border-[#f2ca50] border-t-transparent animate-spin" />
-          <span className="font-['Hanken_Grotesk'] text-[14px] text-[#d0c5af]">
-            Loading leads...
+      <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 border-[var(--c-amber)] border-t-transparent animate-spin" />
+          <span className="text-[12px] text-[var(--c-text-subtle)] font-medium">
+            Connecting to pipeline…
           </span>
         </div>
       </div>
@@ -165,26 +196,32 @@ export default function App() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen bg-[#0f131c] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center p-8 rounded-xl bg-[#181c24] border border-white/5">
-          <span className="text-3xl">⚠️</span>
-          <h2 className="font-['Manrope'] text-[20px] font-bold text-[#dfe2ee]">
-            Unable to load leads
-          </h2>
-          <p className="font-['Hanken_Grotesk'] text-[13px] text-[#d0c5af] leading-relaxed">
-            {loadError}
-          </p>
-          <p className="font-['Hanken_Grotesk'] text-[12px] text-[#99907c]">
-            Make sure the FastAPI backend is running on{' '}
-            <span className="text-[#f2ca50] font-mono">
+      <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 max-w-sm text-center p-6 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)] shadow-sm">
+          <div className="w-10 h-10 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-['Manrope'] text-[15px] font-bold text-[var(--c-text)]">
+              Unable to load leads
+            </h2>
+            <p className="text-[11px] text-[var(--c-text-muted)] mt-1 leading-relaxed">
+              {loadError.length > 120 ? 'Could not reach the backend API.' : loadError}
+            </p>
+          </div>
+          <div className="text-[11px] text-[var(--c-text-subtle)]">
+            Make sure the FastAPI server is running at{' '}
+            <span className="font-mono text-[var(--c-amber)]">
               {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}
             </span>
-          </p>
+          </div>
           <button
             onClick={handleRefreshSync}
-            className="px-5 py-2 rounded-lg bg-[#f2ca50] text-[#3c2f00] font-bold text-sm hover:bg-[#d4af37] transition-colors"
+            className="px-4 py-1.5 rounded-md bg-[var(--c-amber)] hover:bg-[var(--c-accent-hover)] text-[var(--c-accent-on)] text-[11px] font-semibold transition-colors cursor-pointer"
           >
-            Retry
+            Retry Connection
           </button>
         </div>
       </div>
@@ -196,7 +233,7 @@ export default function App() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div id="vanguard-sales-app" className="min-h-screen bg-[#0f131c] text-[#dfe2ee] flex">
+    <div id="vanguard-sales-app" className="min-h-screen bg-[var(--c-bg)] text-[var(--c-text)] flex">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={(tab) => {
@@ -207,16 +244,38 @@ export default function App() {
         approvedCount={approvedLeads.length}
         rejectedCount={rejectedLeads.length}
         totalLeadsCount={leads.length}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
-      <div className="pl-64 flex-1 flex flex-col min-w-0">
+      <div
+        id="main-content-wrapper"
+        className="flex-1 flex flex-col min-w-0"
+        style={{ paddingLeft: sidebarCollapsed ? '3.5rem' : '15rem' }}
+      >
         <Header
           searchQuery={globalSearch}
           setSearchQuery={setGlobalSearch}
           onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          sidebarCollapsed={sidebarCollapsed}
         />
 
-        <main className="w-full pt-16 bg-[#0f131c] px-6 min-h-screen">
+        {/* Action error banner */}
+        {actionError && (
+          <div className="fixed top-13 left-0 right-0 z-30 flex justify-center px-6 pt-2" style={{ paddingLeft: sidebarCollapsed ? '3.5rem' : '15rem' }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-rose-600 text-white text-[11px] font-medium shadow-lg max-w-lg w-full">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <span className="flex-1">{actionError}</span>
+              <button onClick={() => setActionError(null)} className="text-white/70 hover:text-white transition-colors cursor-pointer">✕</button>
+            </div>
+          </div>
+        )}
+
+        <main className="w-full pt-13 bg-[var(--c-bg)] px-6 min-h-screen">
           {activeTab === 'dashboard' && (
             <DashboardView
               onNavigate={setActiveTab}

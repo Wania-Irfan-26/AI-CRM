@@ -1,15 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { fetchDashboard, DashboardData, DashboardActionItem, DashboardActivity } from '../services/api';
 import { NavTab } from '../types';
+import {
+  Users,
+  Bot,
+  Send,
+  MailCheck,
+  Sparkles,
+  Clock,
+  RefreshCw,
+  Filter,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  TrendingUp,
+  MessageSquare,
+  Flame,
+  HelpCircle,
+  Calendar,
+  UserX,
+  XCircle,
+} from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigate: (tab: NavTab) => void;
   onActionClick: (leadId: string) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Small helpers
-// ---------------------------------------------------------------------------
 
 function _pct(numerator: number, denominator: number): string {
   if (!denominator) return '0%';
@@ -22,129 +38,112 @@ function _fmt(ts: string): string {
     const d = new Date(ts.replace(' UTC', 'Z'));
     if (isNaN(d.getTime())) return ts;
     return d.toLocaleString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   } catch {
     return ts;
   }
 }
 
-// Activity icon + colours keyed by type
-const ACTIVITY_CONFIG: Record<string, { icon: string; bg: string; color: string }> = {
-  email_sent:       { icon: 'forward_to_inbox', bg: 'bg-[#58e7aa]/20',  color: 'text-[#58e7aa]' },
-  reply_received:   { icon: 'mark_email_read',  bg: 'bg-[#f2ca50]/20',  color: 'text-[#f2ca50]' },
-  lead_classified:  { icon: 'psychology',        bg: 'bg-[#93c5fd]/20',  color: 'text-[#93c5fd]' },
-  followup_sent:    { icon: 'send',              bg: 'bg-[#58e7aa]/20',  color: 'text-[#58e7aa]' },
-  default:          { icon: 'info',              bg: 'bg-[#262a33]',     color: 'text-[#d0c5af]'  },
+// Activity config with lucide icons
+const ACTIVITY_CONFIG: Record<string, { icon: React.ReactNode; bg: string; text: string }> = {
+  email_sent: {
+    icon: <Send className="w-3.5 h-3.5" />,
+    bg: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20',
+    text: 'text-emerald-500',
+  },
+  reply_received: {
+    icon: <MailCheck className="w-3.5 h-3.5" />,
+    bg: 'bg-amber-500/10 text-amber-500 border border-amber-500/20',
+    text: 'text-amber-500',
+  },
+  lead_classified: {
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+    bg: 'bg-blue-500/10 text-blue-500 border border-blue-500/20',
+    text: 'text-blue-500',
+  },
+  followup_sent: {
+    icon: <Calendar className="w-3.5 h-3.5" />,
+    bg: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20',
+    text: 'text-emerald-500',
+  },
+  default: {
+    icon: <Clock className="w-3.5 h-3.5" />,
+    bg: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
+    text: 'text-slate-400',
+  },
 };
 
 // Category badge styles
-const CAT_BADGE: Record<string, string> = {
-  INTERESTED:      'bg-[#f2ca50]/15 border border-[#f2ca50]/30 text-[#f2ca50]',
-  NEEDS_INFO:      'bg-[#31353e] text-[#f2ca50]',
-  FOLLOW_UP_LATER: 'bg-[#93c5fd]/15 border border-[#93c5fd]/30 text-[#93c5fd]',
-  PENDING:         'bg-[#f2ca50]/15 border border-[#f2ca50]/30 text-[#f2ca50]',
+const CAT_BADGE: Record<string, { badgeClass: string; icon: React.ReactNode }> = {
+  INTERESTED: {
+    badgeClass: 'crm-badge-green font-semibold',
+    icon: <Flame className="w-3 h-3 text-emerald-500" />,
+  },
+  NEEDS_INFO: {
+    badgeClass: 'crm-badge-amber font-semibold',
+    icon: <HelpCircle className="w-3 h-3 text-amber-500" />,
+  },
+  FOLLOW_UP_LATER: {
+    badgeClass: 'crm-badge-blue font-semibold',
+    icon: <Calendar className="w-3 h-3 text-blue-500" />,
+  },
+  NOT_INTERESTED: {
+    badgeClass: 'crm-badge-neutral text-slate-400',
+    icon: <UserX className="w-3 h-3 text-slate-400" />,
+  },
+  BOUNCE: {
+    badgeClass: 'crm-badge-red text-rose-500',
+    icon: <XCircle className="w-3 h-3 text-rose-500" />,
+  },
 };
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function KpiCard({
-  label, value, icon, iconColor = 'text-[#d0c5af]/60',
-  highlight = false, sub,
+// Compact KPI Card
+function CompactKpiCard({
+  label,
+  value,
+  icon,
+  highlight = false,
+  sub,
 }: {
   label: string;
   value: number;
-  icon: string;
-  iconColor?: string;
+  icon: React.ReactNode;
   highlight?: boolean;
   sub?: string;
 }) {
   return (
-    <div className={`relative overflow-hidden rounded-xl p-4 flex flex-col justify-between shadow-sm transition-colors
-      ${highlight
-        ? 'bg-[#181c24] border border-[#f2ca50]/50 shadow-md'
-        : 'bg-[#181c24] border border-[#31353e]/40 hover:border-[#31353e]'
+    <div
+      className={`p-3.5 rounded-lg border transition-all flex flex-col justify-between ${
+        highlight
+          ? 'bg-[var(--c-bg-card)] border-amber-500/30 shadow-xs'
+          : 'bg-[var(--c-bg-card)] border-[var(--c-border)] hover:border-[var(--c-border-hover)]'
       }`}
     >
-      {highlight && (
-        <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-[#f2ca50]/15 blur-xl pointer-events-none" />
-      )}
-      <div className="flex items-start justify-between">
-        <span className={`font-['Hanken_Grotesk'] text-[11px] uppercase tracking-wider font-medium ${highlight ? 'text-[#f2ca50]' : 'text-[#d0c5af]'}`}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium text-[var(--c-text-muted)] tracking-wider uppercase">
           {label}
         </span>
-        <span className={`material-symbols-outlined text-lg ${iconColor}`}>{icon}</span>
+        <span className={highlight ? 'text-[var(--c-amber)]' : 'text-[var(--c-text-subtle)]'}>
+          {icon}
+        </span>
       </div>
-      <div className="my-1">
-        <span className={`font-['Manrope'] text-[40px] leading-none font-semibold ${highlight ? 'text-[#f2ca50]' : 'text-[#dfe2ee]'}`}>
+      <div className="my-1.5 flex items-baseline justify-between">
+        <span className="font-['Manrope'] text-[24px] font-bold text-[var(--c-text)] leading-none">
           {value}
         </span>
       </div>
       {sub && (
-        <div className="pt-1">
-          <span className={`font-['Hanken_Grotesk'] text-[12px] ${highlight ? 'text-[#58e7aa] font-semibold' : 'text-[#d0c5af]'}`}>
-            {sub}
-          </span>
-        </div>
-      )}
-      {/* Sparkline decoration */}
-      <svg className={`w-full h-4 mt-2 stroke-current fill-none ${highlight ? 'text-[#f2ca50]' : 'text-[#d0c5af]/30'}`}
-        preserveAspectRatio="none" viewBox="0 0 100 20">
-        <path d="M0,16 Q25,14 50,10 T80,6 T100,3" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-      </svg>
-    </div>
-  );
-}
-
-function FunnelStage({
-  num, label, value, sub, pct, barColor, highlight = false,
-}: {
-  num: string; label: string; value: number; sub: string;
-  pct: number; barColor: string; highlight?: boolean;
-}) {
-  return (
-    <div className={`relative p-3 rounded-lg flex flex-col justify-between transition-all
-      ${highlight
-        ? 'bg-[#262a33] border border-[#f2ca50]/60 shadow-md'
-        : 'bg-[#1c2028] border border-[#31353e]/30 hover:bg-[#262a33]'
-      }`}
-    >
-      {highlight && <div className="absolute inset-0 bg-[#f2ca50]/5 rounded-lg pointer-events-none" />}
-      <div>
-        <div className="flex items-center justify-between font-['Hanken_Grotesk'] text-[11px]">
-          <span className={highlight ? 'text-[#f2ca50] font-bold flex items-center gap-1.5' : 'text-[#d0c5af]'}>
-            {highlight && <span className="w-1.5 h-1.5 rounded-full bg-[#f2ca50] animate-pulse" />}
-            {num}
-          </span>
-          <span className={`font-semibold ${highlight ? 'text-[#f2ca50] font-bold' : 'text-[#58e7aa]'}`}>
-            {pct > 0 ? `${pct}%` : ''}
-          </span>
-        </div>
-        <div className={`mt-1 font-['Manrope'] text-[20px] font-semibold ${highlight ? 'text-[#f2ca50]' : 'text-[#dfe2ee]'}`}>
-          {value}
-        </div>
-        <div className={`font-['Hanken_Grotesk'] text-[12px] ${highlight ? 'text-[#dfe2ee]' : 'text-[#d0c5af]'}`}>
-          {label}
-        </div>
-      </div>
-      <div className="mt-4">
-        <div className="w-full bg-[#31353e] rounded-full h-1.5 overflow-hidden">
-          <div className={`h-1.5 rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-        </div>
-        <div className={`mt-1.5 font-['Hanken_Grotesk'] text-[12px] ${highlight ? 'text-[#e9c349]' : 'text-[#d0c5af]/70'}`}>
+        <span className={`text-[11px] truncate ${highlight ? 'text-[var(--c-amber)] font-medium' : 'text-[var(--c-text-subtle)]'}`}>
           {sub}
-        </div>
-      </div>
+        </span>
+      )}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onActionClick }) => {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -167,35 +166,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onActi
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  // ---------------------------------------------------------------------------
-  // Loading state
-  // ---------------------------------------------------------------------------
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 rounded-full border-2 border-[#f2ca50] border-t-transparent animate-spin" />
-          <span className="font-['Hanken_Grotesk'] text-[14px] text-[#d0c5af]">Loading dashboard...</span>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 border-[var(--c-amber)] border-t-transparent animate-spin" />
+          <span className="text-[13px] text-[var(--c-text-muted)]">Loading metrics...</span>
         </div>
       </div>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Error state
-  // ---------------------------------------------------------------------------
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center p-8 rounded-xl bg-[#181c24] border border-white/5">
-          <span className="text-3xl">⚠️</span>
-          <h2 className="font-['Manrope'] text-[20px] font-bold text-[#dfe2ee]">Unable to load dashboard</h2>
-          <p className="font-['Hanken_Grotesk'] text-[13px] text-[#d0c5af]">{error}</p>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-3 max-w-sm text-center p-6 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)]">
+          <AlertCircle className="w-8 h-8 text-rose-500" />
+          <h2 className="font-['Manrope'] text-[16px] font-semibold text-[var(--c-text)]">
+            Unable to load dashboard
+          </h2>
+          <p className="text-[12px] text-[var(--c-text-muted)]">{error}</p>
           <button
             onClick={() => load()}
-            className="px-5 py-2 rounded-lg bg-[#f2ca50] text-[#3c2f00] font-bold text-sm hover:bg-[#d4af37] transition-colors"
+            className="px-3.5 py-1.5 rounded-md bg-[var(--c-amber)] text-[var(--c-accent-on)] font-semibold text-xs hover:bg-[var(--c-accent-hover)] transition-colors"
           >
             Retry
           </button>
@@ -205,273 +202,307 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onActi
   }
 
   const { kpis, funnel, reply_breakdown, followup_breakdown, recent_activity, action_required } = data;
-
-  // Funnel percentages relative to total_leads
   const total = kpis.total_leads || 1;
   const funnelPct = (n: number) => Math.round((n / total) * 100);
-
-  // Reply total for percentage bars
   const replyTotal = Object.values(reply_breakdown).reduce((a, b) => a + b, 0) || 1;
 
-  // Reply bar config
-  const replyBars: Array<{ key: keyof typeof reply_breakdown; label: string; color: string; badge?: string }> = [
-    { key: 'INTERESTED',      label: 'Interested',            color: 'bg-[#f2ca50]',   badge: 'High Priority' },
-    { key: 'NEEDS_INFO',      label: 'Needs Information',     color: 'bg-[#e9c349]',   badge: 'Review Needed' },
-    { key: 'FOLLOW_UP_LATER', label: 'Follow Up Later',       color: 'bg-[#93c5fd]',   badge: 'Auto Cadence' },
-    { key: 'NOT_INTERESTED',  label: 'Not Interested',        color: 'bg-[#99907c]' },
-    { key: 'BOUNCE',          label: 'Hard Bounce / Invalid', color: 'bg-[#ffb4ab]/60' },
-    { key: 'UNCLEAR',         label: 'Ambiguous / Unclear',   color: 'bg-[#4d4635]' },
+  const replyBars: Array<{
+    key: keyof typeof reply_breakdown;
+    label: string;
+    color: string;
+    dotBg: string;
+    badge?: string;
+  }> = [
+    { key: 'INTERESTED', label: 'Interested', color: 'bg-emerald-500', dotBg: 'bg-emerald-500', badge: 'High Priority' },
+    { key: 'NEEDS_INFO', label: 'Needs Information', color: 'bg-amber-500', dotBg: 'bg-amber-500', badge: 'Review Needed' },
+    { key: 'FOLLOW_UP_LATER', label: 'Follow Up Later', color: 'bg-blue-500', dotBg: 'bg-blue-500', badge: 'Cadence' },
+    { key: 'NOT_INTERESTED', label: 'Not Interested', color: 'bg-slate-400', dotBg: 'bg-slate-400' },
+    { key: 'BOUNCE', label: 'Bounce / Invalid', color: 'bg-rose-400', dotBg: 'bg-rose-400' },
+    { key: 'UNCLEAR', label: 'Ambiguous / Unclear', color: 'bg-slate-600', dotBg: 'bg-slate-600' },
+  ];
+
+  const funnelSteps = [
+    { num: '01', label: 'Total Inbound', value: funnel.leads, pct: 100, sub: 'All leads' },
+    { num: '02', label: 'AI Processed', value: funnel.ai_processed, pct: funnelPct(funnel.ai_processed), sub: 'Enriched' },
+    { num: '03', label: 'Cold Emails Sent', value: funnel.emails_sent, pct: funnelPct(funnel.emails_sent), sub: 'Via Gmail' },
+    { num: '04', label: 'Replies Received', value: funnel.replies, pct: funnelPct(funnel.replies), sub: 'Prospect replies' },
+    { num: '05', label: 'Positive Interest', value: funnel.interested, pct: funnelPct(funnel.interested), sub: 'Interested', highlight: true },
+    { num: '06', label: 'In Follow-up', value: funnel.followups, pct: funnelPct(funnel.followups), sub: 'Cadence' },
   ];
 
   return (
-    <div className="flex flex-col w-full pb-10">
-
+    <div className="flex flex-col w-full pb-8 pt-2">
       {/* PAGE HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-6">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-row items-center justify-between gap-4 py-4 border-b border-[var(--c-border)] mb-5">
+        <div>
           <div className="flex items-center gap-2">
-            <span className="font-['Hanken_Grotesk'] text-[11px] uppercase tracking-wider text-[#f2ca50] font-semibold">
-              Executive Command Console
-            </span>
-            <span className="text-[#d0c5af]/40">•</span>
-            <span className="font-['Hanken_Grotesk'] text-[12px] text-[#58e7aa] font-medium">
-              Live Telemetry
-            </span>
+            <h1 className="font-['Manrope'] text-[20px] font-bold text-[var(--c-text)]">
+              Pipeline Overview
+            </h1>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="text-[11px] text-[var(--c-text-subtle)] font-medium">Live Telemetry</span>
           </div>
-          <h1 className="font-['Manrope'] text-[28px] leading-[36px] font-semibold text-[#dfe2ee] tracking-tight">
-            Pipeline &amp; Performance Dashboard
-          </h1>
-          <p className="font-['Hanken_Grotesk'] text-[14px] text-[#d0c5af] max-w-2xl">
-            Real-time visibility into AI outreach efficiency, conversion funnel velocities, and autonomous agent orchestration.
+          <p className="text-[12px] text-[var(--c-text-muted)] mt-0.5">
+            Real-time performance metrics across CrewAI outreach, email delivery, and response conversion.
           </p>
         </div>
 
-        {/* Refresh */}
         <button
           onClick={() => load(true)}
           disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#181c24] hover:bg-[#262a33] border border-[#31353e]/40 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--c-bg-card)] hover:bg-[var(--c-hover-bg)] text-[var(--c-text-muted)] hover:text-[var(--c-text)] border border-[var(--c-border)] transition-colors text-xs font-medium cursor-pointer"
         >
-          <span className={`material-symbols-outlined text-[#58e7aa] text-sm ${refreshing ? 'animate-spin' : ''}`}>
-            sync
-          </span>
-          <span className="font-['Hanken_Grotesk'] text-[11px] text-[#d0c5af]">
-            {refreshing ? <span className="text-[#58e7aa] font-medium">Refreshing...</span> : 'Refresh data'}
-          </span>
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[var(--c-amber)]' : ''}`} />
+          <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
         </button>
       </div>
 
-      {/* 1. KPI ROW */}
-      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <KpiCard label="Total Leads"      value={kpis.total_leads}      icon="group"             sub="All time" />
-        <KpiCard label="AI Processed"     value={kpis.ai_processed}     icon="psychology"        iconColor="text-[#f2ca50]"  sub={`${_pct(kpis.ai_processed, kpis.total_leads)} of total`} />
-        <KpiCard label="Emails Sent"      value={kpis.emails_sent}      icon="forward_to_inbox"  sub={`${_pct(kpis.emails_sent, kpis.ai_processed)} of processed`} />
-        <KpiCard label="Replies Received" value={kpis.replies_received} icon="mark_email_read"   iconColor="text-[#58e7aa]"  sub={`${_pct(kpis.replies_received, kpis.emails_sent)} reply rate`} />
-        <KpiCard label="Interested Leads" value={kpis.interested_leads} icon="stars"             iconColor="text-[#f2ca50]"  highlight sub={`${_pct(kpis.interested_leads, kpis.replies_received)} of replies`} />
-        <KpiCard label="Follow-ups Pending" value={kpis.followups_pending} icon="schedule"       sub="Need sign-off" />
+      {/* 1. COMPACT KPI ROW (6 CARDS) */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
+        <CompactKpiCard
+          label="Total Leads"
+          value={kpis.total_leads}
+          icon={<Users className="w-4 h-4" />}
+          sub="All indexed leads"
+        />
+        <CompactKpiCard
+          label="AI Processed"
+          value={kpis.ai_processed}
+          icon={<Bot className="w-4 h-4" />}
+          sub={`${_pct(kpis.ai_processed, kpis.total_leads)} completed`}
+        />
+        <CompactKpiCard
+          label="Emails Sent"
+          value={kpis.emails_sent}
+          icon={<Send className="w-4 h-4" />}
+          sub={`${_pct(kpis.emails_sent, kpis.ai_processed)} dispatch rate`}
+        />
+        <CompactKpiCard
+          label="Replies"
+          value={kpis.replies_received}
+          icon={<MailCheck className="w-4 h-4" />}
+          sub={`${_pct(kpis.replies_received, kpis.emails_sent)} reply rate`}
+        />
+        <CompactKpiCard
+          label="Interested"
+          value={kpis.interested_leads}
+          icon={<Sparkles className="w-4 h-4 text-emerald-500" />}
+          highlight={true}
+          sub={`${_pct(kpis.interested_leads, kpis.replies_received)} positive`}
+        />
+        <CompactKpiCard
+          label="Follow-ups"
+          value={kpis.followups_pending}
+          icon={<Clock className="w-4 h-4" />}
+          sub="Pending review"
+        />
       </section>
 
-      {/* 2. FUNNEL */}
-      <section className="mt-6 rounded-xl bg-[#181c24] border border-[#31353e]/40 p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#262a33] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#f2ca50] text-base">filter_alt</span>
-            </div>
-            <div>
-              <h2 className="font-['Manrope'] text-[16px] font-semibold text-[#dfe2ee]">
-                End-to-End Conversion Funnel
-              </h2>
-              <p className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">
-                Step-by-step pipeline drop-off metrics
-              </p>
-            </div>
+      {/* 2. PIPELINE CONVERSION FUNNEL */}
+      <section className="mt-4 p-4 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)] shadow-xs">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-[var(--c-amber)]" />
+            <h2 className="font-['Manrope'] text-[14px] font-semibold text-[var(--c-text)]">
+              End-to-End Outreach Funnel
+            </h2>
           </div>
+          <span className="text-[11px] text-[var(--c-text-subtle)]">
+            Step-by-step conversion tracking
+          </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2">
-          <FunnelStage num="01 / Ingestion"    label="Total Inbound"         value={funnel.leads}        pct={100}                              sub="All leads"        barColor="bg-[#bcc7de]" />
-          <FunnelStage num="02 / Evaluated"    label="Enriched & Scored"     value={funnel.ai_processed} pct={funnelPct(funnel.ai_processed)}   sub="AI pipeline"      barColor="bg-[#bcc7de]" />
-          <FunnelStage num="03 / Dispatched"   label="Cold Email Sent"       value={funnel.emails_sent}  pct={funnelPct(funnel.emails_sent)}    sub="Via Gmail"        barColor="bg-[#bcc7de]" />
-          <FunnelStage num="04 / Inbound Reply" label="Direct Replies"       value={funnel.replies}      pct={funnelPct(funnel.replies)}        sub="From prospects"   barColor="bg-[#f2ca50]/80" />
-          <FunnelStage num="05 / High Interest" label="Positive Sentiment"   value={funnel.interested}   pct={funnelPct(funnel.interested)}     sub="INTERESTED only"  barColor="bg-[#f2ca50]"    highlight />
-          <FunnelStage num="06 / Follow-ups"   label="In Cadence"            value={funnel.followups}    pct={funnelPct(funnel.followups)}      sub="Active follow-up" barColor="bg-[#33ca90]" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {funnelSteps.map((step) => (
+            <div
+              key={step.num}
+              className={`p-2.5 rounded-md border flex flex-col justify-between transition-colors ${
+                step.highlight
+                  ? 'bg-[var(--c-amber-bg)]/30 border-amber-500/30'
+                  : 'bg-[var(--c-bg-subtle)] border-[var(--c-border)]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-[var(--c-text-subtle)] font-medium">{step.num}</span>
+                  <span className={`font-semibold ${step.highlight ? 'text-[var(--c-amber)]' : 'text-emerald-500'}`}>
+                    {step.pct}%
+                  </span>
+                </div>
+                <div className="mt-1 font-['Manrope'] text-[18px] font-bold text-[var(--c-text)] leading-none">
+                  {step.value}
+                </div>
+                <div className="text-[11px] font-medium text-[var(--c-text)] mt-1 truncate">
+                  {step.label}
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <div className="w-full bg-[var(--c-border)] h-1 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${step.highlight ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${Math.min(step.pct, 100)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-[10px] text-[var(--c-text-subtle)] truncate">
+                  {step.sub}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* 3. REPLY INTELLIGENCE + FOLLOW-UP STATUS */}
-      <section className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
+      {/* 3. REPLY SENTIMENT + FOLLOW-UP STATUS */}
+      <section className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Reply Intelligence (7 cols) */}
-        <div className="lg:col-span-7 rounded-xl bg-[#181c24] border border-[#31353e]/40 p-6 shadow-sm">
-          <div className="flex items-start justify-between mb-1">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#58e7aa]" />
-                <h3 className="font-['Manrope'] text-[16px] font-semibold text-[#dfe2ee]">
-                  Reply Intelligence &amp; Sentiment
-                </h3>
-              </div>
-              <p className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af] mt-0.5">
-                AI classification across {replyTotal} inbound prospect replies
-              </p>
+        <div className="lg:col-span-7 p-4 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)] shadow-xs flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-emerald-500" />
+              <h3 className="font-['Manrope'] text-[14px] font-semibold text-[var(--c-text)]">
+                Inbound Reply Sentiment
+              </h3>
             </div>
-            <span className="font-['Hanken_Grotesk'] text-[12px] px-2 py-0.5 rounded bg-[#262a33] text-[#d0c5af] font-semibold border border-[#31353e]">
-              {replyTotal} Total
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--c-hover-bg)] text-[var(--c-text-muted)] font-medium border border-[var(--c-border)]">
+              {replyTotal} Total Replies
             </span>
           </div>
 
-          <div className="mt-5 space-y-2">
-            {replyBars.map(({ key, label, color, badge }) => {
+          <div className="space-y-2 flex-1">
+            {replyBars.map(({ key, label, color, dotBg, badge }) => {
               const count = reply_breakdown[key];
               const pct = Math.round((count / replyTotal) * 100);
               return (
-                <div key={key} className="flex flex-col gap-1 p-1 rounded-lg hover:bg-[#1c2028] transition-colors">
-                  <div className="flex items-center justify-between font-['Hanken_Grotesk'] text-[13px]">
+                <div
+                  key={key}
+                  className="p-1.5 px-2 rounded-md hover:bg-[var(--c-hover-bg)] transition-colors flex flex-col gap-1"
+                >
+                  <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
-                      <span className="text-[#dfe2ee] font-medium">{label}</span>
+                      <span className={`w-2 h-2 rounded-full ${dotBg}`} />
+                      <span className="font-medium text-[var(--c-text)]">{label}</span>
                       {badge && (
-                        <span className="px-2 py-0.5 rounded-full bg-[#f2ca50]/10 border border-[#f2ca50]/30 text-[#f2ca50] font-['Hanken_Grotesk'] text-[11px] font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-[var(--c-hover-bg)] text-[var(--c-text-muted)] border border-[var(--c-border)]">
                           {badge}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 font-['Hanken_Grotesk'] text-[12px]">
-                      <span className="text-[#dfe2ee] font-semibold">{count}</span>
-                      <span className="text-[#d0c5af] w-10 text-right">{pct}%</span>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="font-semibold text-[var(--c-text)]">{count}</span>
+                      <span className="text-[var(--c-text-subtle)] w-8 text-right font-mono text-[11px]">
+                        {pct}%
+                      </span>
                     </div>
                   </div>
-                  <div className="w-full bg-[#31353e] h-2 rounded-full overflow-hidden">
-                    <div className={`${color} h-2 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                  <div className="w-full bg-[var(--c-border)] h-1 rounded-full overflow-hidden">
+                    <div className={`${color} h-full transition-all duration-300`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
             })}
           </div>
-
-          {/* Footer note */}
-          {replyTotal === 0 && (
-            <p className="mt-4 font-['Hanken_Grotesk'] text-[12px] text-[#99907c] text-center">
-              No replies classified yet. Check for replies in the Approved tab.
-            </p>
-          )}
         </div>
 
         {/* Follow-up Status (5 cols) */}
-        <div className="lg:col-span-5 rounded-xl bg-[#181c24] border border-[#31353e]/40 p-6 shadow-sm flex flex-col">
-          <div className="flex items-start justify-between mb-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#f2ca50] text-base">alt_route</span>
-                <h3 className="font-['Manrope'] text-[16px] font-semibold text-[#dfe2ee]">
-                  Follow-Up Status
-                </h3>
-              </div>
-              <p className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af] mt-0.5">
-                Follow-up orchestrations in pipeline
-              </p>
+        <div className="lg:col-span-5 p-4 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)] shadow-xs flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-500" />
+              <h3 className="font-['Manrope'] text-[14px] font-semibold text-[var(--c-text)]">
+                Follow-Up Orchestration
+              </h3>
             </div>
-            <span className="font-['Hanken_Grotesk'] text-[12px] px-2 py-0.5 rounded bg-[#262a33] text-[#f2ca50] font-semibold border border-[#31353e]">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--c-hover-bg)] text-[var(--c-text-muted)] font-medium border border-[var(--c-border)]">
               {Object.values(followup_breakdown).reduce((a, b) => a + b, 0)} Total
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mt-3 flex-1">
-            {/* Pending */}
-            <div className="p-3 rounded-lg bg-[#1c2028] border border-[#31353e]/30 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-[#d0c5af]">
-                <span className="font-['Hanken_Grotesk'] text-[11px] uppercase font-semibold">Pending Review</span>
-                <span className="material-symbols-outlined text-[#f2ca50] text-sm">notification_important</span>
-              </div>
-              <div className="my-1 font-['Manrope'] text-[24px] font-bold text-[#f2ca50]">
+          <div className="grid grid-cols-2 gap-2 flex-1">
+            <div className="p-3 rounded-md bg-[var(--c-bg-subtle)] border border-[var(--c-border)] flex flex-col justify-between">
+              <span className="text-[11px] font-medium text-[var(--c-text-muted)] uppercase tracking-wider">
+                Pending Review
+              </span>
+              <div className="my-1 font-['Manrope'] text-[20px] font-bold text-[var(--c-amber)]">
                 {followup_breakdown.PENDING}
               </div>
-              <span className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">Urgent sign-off</span>
+              <span className="text-[11px] text-[var(--c-text-subtle)]">Awaiting sign-off</span>
             </div>
 
-            {/* Sent */}
-            <div className="p-3 rounded-lg bg-[#1c2028] border border-[#31353e]/30 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-[#d0c5af]">
-                <span className="font-['Hanken_Grotesk'] text-[11px] uppercase font-semibold">Sent</span>
-                <span className="material-symbols-outlined text-[#58e7aa] text-sm">schedule_send</span>
-              </div>
-              <div className="my-1 font-['Manrope'] text-[24px] font-bold text-[#dfe2ee]">
+            <div className="p-3 rounded-md bg-[var(--c-bg-subtle)] border border-[var(--c-border)] flex flex-col justify-between">
+              <span className="text-[11px] font-medium text-[var(--c-text-muted)] uppercase tracking-wider">
+                Delivered
+              </span>
+              <div className="my-1 font-['Manrope'] text-[20px] font-bold text-emerald-500">
                 {followup_breakdown.SENT}
               </div>
-              <span className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">Delivered</span>
+              <span className="text-[11px] text-[var(--c-text-subtle)]">Sent to prospect</span>
             </div>
 
-            {/* Approved */}
-            <div className="p-3 rounded-lg bg-[#1c2028] border border-[#31353e]/30 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-[#d0c5af]">
-                <span className="font-['Hanken_Grotesk'] text-[11px] uppercase font-semibold">Approved</span>
-                <span className="material-symbols-outlined text-[#bcc7de] text-sm">done_all</span>
-              </div>
-              <div className="my-1 font-['Manrope'] text-[24px] font-bold text-[#dfe2ee]">
+            <div className="p-3 rounded-md bg-[var(--c-bg-subtle)] border border-[var(--c-border)] flex flex-col justify-between">
+              <span className="text-[11px] font-medium text-[var(--c-text-muted)] uppercase tracking-wider">
+                Approved
+              </span>
+              <div className="my-1 font-['Manrope'] text-[20px] font-bold text-[var(--c-text)]">
                 {followup_breakdown.APPROVED}
               </div>
-              <span className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">Approved</span>
+              <span className="text-[11px] text-[var(--c-text-subtle)]">Ready in queue</span>
             </div>
 
-            {/* Cancelled */}
-            <div className="p-3 rounded-lg bg-[#1c2028] border border-[#31353e]/30 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-[#d0c5af]">
-                <span className="font-['Hanken_Grotesk'] text-[11px] uppercase font-semibold">Cancelled</span>
-                <span className="material-symbols-outlined text-[#d0c5af] text-sm">remove_done</span>
-              </div>
-              <div className="my-1 font-['Manrope'] text-[24px] font-bold text-[#d0c5af]">
+            <div className="p-3 rounded-md bg-[var(--c-bg-subtle)] border border-[var(--c-border)] flex flex-col justify-between">
+              <span className="text-[11px] font-medium text-[var(--c-text-muted)] uppercase tracking-wider">
+                Cancelled
+              </span>
+              <div className="my-1 font-['Manrope'] text-[20px] font-bold text-[var(--c-text-subtle)]">
                 {followup_breakdown.CANCELLED}
               </div>
-              <span className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">Cancelled</span>
+              <span className="text-[11px] text-[var(--c-text-subtle)]">Dismissed</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. ACTIVITY + ACTION REQUIRED */}
-      <section className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
+      {/* 4. ACTIVITY LOG & ACTION REQUIRED */}
+      <section className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Recent Activity (7 cols) */}
-        <div className="lg:col-span-7 rounded-xl bg-[#181c24] border border-[#31353e]/40 p-6 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-7 p-4 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)] shadow-xs flex flex-col">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#f2ca50] animate-pulse" />
-              <h3 className="font-['Manrope'] text-[16px] font-semibold text-[#dfe2ee]">
-                Real-Time CRM Activity
+              <Clock className="w-4 h-4 text-[var(--c-text-muted)]" />
+              <h3 className="font-['Manrope'] text-[14px] font-semibold text-[var(--c-text)]">
+                Recent CRM Events
               </h3>
             </div>
-            <div className="flex items-center gap-1.5 font-['Hanken_Grotesk'] text-[11px] text-[#d0c5af]">
-              <span className="material-symbols-outlined text-sm">history</span>
-              <span>Latest 20 events</span>
-            </div>
+            <span className="text-[11px] text-[var(--c-text-subtle)]">Latest 20 entries</span>
           </div>
 
           {recent_activity.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center py-10">
-              <p className="font-['Hanken_Grotesk'] text-[13px] text-[#99907c]">No activity recorded yet.</p>
+            <div className="flex-1 flex items-center justify-center py-8">
+              <p className="text-xs text-[var(--c-text-muted)]">No activity recorded yet.</p>
             </div>
           ) : (
-            <div className="space-y-2 flex-1">
+            <div className="space-y-1.5 flex-1 max-h-72 overflow-y-auto pr-1">
               {recent_activity.map((act: DashboardActivity, i: number) => {
                 const cfg = ACTIVITY_CONFIG[act.type] ?? ACTIVITY_CONFIG.default;
                 return (
-                  <div key={`${act.lead_id}-${i}`}
-                    className="p-3 rounded-lg bg-[#1c2028] border border-[#31353e]/20 flex items-start gap-3 hover:bg-[#262a33] transition-all"
+                  <div
+                    key={`${act.lead_id}-${i}`}
+                    className="p-2 rounded-md bg-[var(--c-bg-subtle)] border border-[var(--c-border)] flex items-start gap-2.5 hover:bg-[var(--c-hover-bg)] transition-colors"
                   >
-                    <div className={`w-8 h-8 rounded-full ${cfg.bg} ${cfg.color} flex items-center justify-center shrink-0 mt-0.5`}>
-                      <span className="material-symbols-outlined text-base">{cfg.icon}</span>
+                    <div className={`p-1.5 rounded-md ${cfg.bg} shrink-0 mt-0.5`}>
+                      {cfg.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-['Manrope'] text-[14px] font-semibold text-[#dfe2ee] truncate">
-                          {act.company}{act.contact ? ` · ${act.contact}` : ''}
+                        <span className="font-semibold text-xs text-[var(--c-text)] truncate">
+                          {act.company}
+                          {act.contact ? ` · ${act.contact}` : ''}
                         </span>
-                        <span className="font-['Hanken_Grotesk'] text-[11px] text-[#d0c5af] shrink-0">
+                        <span className="text-[10px] text-[var(--c-text-subtle)] shrink-0 font-mono">
                           {_fmt(act.timestamp)}
                         </span>
                       </div>
-                      <p className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af] mt-0.5">
+                      <p className="text-[11px] text-[var(--c-text-muted)] mt-0.5 line-clamp-1">
                         {act.description}
                       </p>
                     </div>
@@ -483,56 +514,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onActi
         </div>
 
         {/* Action Required (5 cols) */}
-        <div className="lg:col-span-5 rounded-xl bg-[#181c24] border border-[#31353e]/40 p-6 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-5 p-4 rounded-lg bg-[var(--c-bg-card)] border border-[var(--c-border)] shadow-xs flex flex-col">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#f2ca50] text-base">priority_high</span>
-              <h3 className="font-['Manrope'] text-[16px] font-semibold text-[#dfe2ee]">Action Required</h3>
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+              <h3 className="font-['Manrope'] text-[14px] font-semibold text-[var(--c-text)]">
+                Action Required
+              </h3>
             </div>
             {action_required.length > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#f2ca50]/15 border border-[#f2ca50]/30 text-[#f2ca50] font-['Hanken_Grotesk'] text-[11px] font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f2ca50] animate-ping" />
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[11px] font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                 {action_required.length} Pending
               </span>
             )}
           </div>
 
           {action_required.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-10 gap-2">
-              <span className="material-symbols-outlined text-[#58e7aa] text-4xl">check_circle</span>
-              <p className="font-['Hanken_Grotesk'] text-[13px] text-[#d0c5af]">All caught up — no actions needed.</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-8 gap-1.5">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+              <p className="text-xs text-[var(--c-text-muted)]">All caught up — no actions needed.</p>
             </div>
           ) : (
-            <div className="space-y-3 flex-1">
-              {action_required.slice(0, 5).map((item: DashboardActionItem) => {
-                const badgeClass = CAT_BADGE[item.category ?? ''] ?? 'bg-[#31353e] text-[#d0c5af]';
+            <div className="space-y-2 flex-1">
+              {action_required.slice(0, 4).map((item: DashboardActionItem) => {
+                const badgeCfg = CAT_BADGE[item.category ?? ''] ?? {
+                  badgeClass: 'crm-badge-neutral',
+                  icon: null,
+                };
                 return (
                   <button
                     key={item.lead_id}
                     onClick={() => onActionClick(item.lead_id)}
-                    className="w-full text-left p-3 rounded-lg bg-[#1c2028] border border-[#31353e]/40 flex flex-col gap-2 hover:bg-[#262a33] hover:border-[#f2ca50]/20 transition-all cursor-pointer group"
+                    className="w-full text-left p-2.5 rounded-md bg-[var(--c-bg-subtle)] border border-[var(--c-border)] hover:border-[var(--c-amber)]/40 hover:bg-[var(--c-hover-bg)] flex flex-col gap-1.5 transition-all cursor-pointer group"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="font-['Manrope'] text-[14px] font-semibold text-[#dfe2ee] group-hover:text-[#f2ca50] transition-colors">
+                      <div className="min-w-0">
+                        <span className="font-semibold text-xs text-[var(--c-text)] group-hover:text-[var(--c-amber)] transition-colors truncate block">
                           {item.company}
-                        </h4>
+                        </span>
                         {item.contact && (
-                          <div className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">{item.contact}</div>
+                          <span className="text-[11px] text-[var(--c-text-subtle)]">{item.contact}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {item.category && (
-                          <span className={`px-2 py-0.5 rounded-full font-['Hanken_Grotesk'] text-[11px] font-semibold ${badgeClass}`}>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${badgeCfg.badgeClass}`}>
                             {item.category.replace('_', ' ')}
                           </span>
                         )}
-                        <span className="material-symbols-outlined text-[14px] text-[#d0c5af]/40 group-hover:text-[#f2ca50] transition-colors">
-                          arrow_forward
-                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-[var(--c-text-subtle)] group-hover:text-[var(--c-amber)] transition-colors" />
                       </div>
                     </div>
-                    <p className="font-['Hanken_Grotesk'] text-[12px] text-[#dfe2ee]/90">
+                    <p className="text-[11px] text-[var(--c-text-muted)] line-clamp-1">
                       {item.reason}
                     </p>
                   </button>
@@ -542,16 +576,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onActi
           )}
 
           {/* Footer */}
-          <div className="mt-4 pt-2 flex items-center justify-between border-t border-[#31353e]/30">
-            <span className="font-['Hanken_Grotesk'] text-[12px] text-[#d0c5af]">
-              {action_required.length > 5 ? `Showing 5 of ${action_required.length}` : `${action_required.length} item${action_required.length !== 1 ? 's' : ''}`}
+          <div className="mt-3 pt-2.5 flex items-center justify-between border-t border-[var(--c-border)] text-xs">
+            <span className="text-[11px] text-[var(--c-text-subtle)]">
+              {action_required.length > 4 ? `Showing 4 of ${action_required.length}` : `${action_required.length} pending`}
             </span>
             <button
               onClick={() => onNavigate('approved')}
-              className="font-['Hanken_Grotesk'] text-[12px] text-[#f2ca50] hover:underline flex items-center gap-0.5"
+              className="text-[11px] font-semibold text-[var(--c-amber)] hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
               <span>View Approved Queue</span>
-              <span className="material-symbols-outlined text-sm">chevron_right</span>
+              <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         </div>

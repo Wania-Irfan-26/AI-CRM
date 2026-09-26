@@ -1,159 +1,527 @@
 @import "tailwindcss";
 
+/* ============================================================
+   DARK THEME TOKENS (default)
+   ============================================================ */
 @theme {
-  --color-surface: #0f131c;
-  --color-surface-dim: #0f131c;
-  --color-surface-bright: #353942;
-  --color-surface-container-lowest: #0a0e16;
-  --color-surface-container-low: #181c24;
-  --color-surface-container: #1c2028;
-  --color-surface-container-high: #262a33;
-  --color-surface-container-highest: #31353e;
-  --color-on-surface: #dfe2ee;
-  --color-on-surface-variant: #d0c5af;
-  --color-inverse-surface: #dfe2ee;
-  --color-inverse-on-surface: #2c3039;
-  --color-outline: #99907c;
-  --color-outline-variant: #4d4635;
-  --color-surface-tint: #e9c349;
-  --color-primary: #f2ca50;
-  --color-on-primary: #3c2f00;
-  --color-primary-container: #d4af37;
-  --color-on-primary-container: #554300;
-  --color-inverse-primary: #735c00;
-  --color-secondary: #bcc7de;
-  --color-on-secondary: #263143;
-  --color-secondary-container: #3e495d;
-  --color-on-secondary-container: #aeb9d0;
-  --color-tertiary: #58e7aa;
-  --color-on-tertiary: #003824;
-  --color-tertiary-container: #33ca90;
-  --color-on-tertiary-container: #005035;
-  --color-error: #ffb4ab;
-  --color-on-error: #690005;
-  --color-error-container: #93000a;
-  --color-on-error-container: #ffdad6;
-  --color-primary-fixed: #ffe088;
-  --color-primary-fixed-dim: #e9c349;
-  --color-on-primary-fixed: #241a00;
-  --color-on-primary-fixed-variant: #574500;
-  --color-secondary-fixed: #d8e3fb;
-  --color-secondary-fixed-dim: #bcc7de;
-  --color-on-secondary-fixed: #111c2d;
-  --color-on-secondary-fixed-variant: #3c475a;
-  --color-tertiary-fixed: #6ffbbe;
-  --color-tertiary-fixed-dim: #4edea3;
-  --color-on-tertiary-fixed: #002113;
-  --color-on-tertiary-fixed-variant: #005236;
-  --color-background: #0f131c;
-  --color-on-background: #dfe2ee;
-  --color-surface-variant: #31353e;
+  /* Surface scale - Clean Slate B2B CRM */
+  --color-surface:                    #0b0f17;
+  --color-surface-dim:                #0b0f17;
+  --color-surface-bright:             #2a3242;
+  --color-surface-container-lowest:   #070a10;
+  --color-surface-container-low:      #111622;
+  --color-surface-container:          #161c2b;
+  --color-surface-container-high:     #1d2436;
+  --color-surface-container-highest:  #252e42;
+  --color-on-surface:                 #f1f5f9;
+  --color-on-surface-variant:         #cbd5e1;
+  --color-inverse-surface:            #f1f5f9;
+  --color-inverse-on-surface:         #1e293b;
+  --color-outline:                    #64748b;
+  --color-outline-variant:            #334155;
+  --color-surface-tint:               #f59e0b;
 
-  --font-manrope: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-hanken: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Primary (warm refined gold / amber) */
+  --color-primary:                    #f59e0b;
+  --color-on-primary:                 #451a03;
+  --color-primary-container:          #d97706;
+  --color-on-primary-container:       #fef3c7;
+  --color-inverse-primary:            #b45309;
+
+  /* Secondary */
+  --color-secondary:                  #94a3b8;
+  --color-on-secondary:               #0f172a;
+  --color-secondary-container:        #334155;
+  --color-on-secondary-container:     #e2e8f0;
+
+  /* Tertiary (emerald) */
+  --color-tertiary:                   #10b981;
+  --color-on-tertiary:                #022c22;
+  --color-tertiary-container:         #059669;
+  --color-on-tertiary-container:      #d1fae5;
+
+  /* Error (rose / red) */
+  --color-error:                      #f87171;
+  --color-on-error:                   #450a0a;
+  --color-error-container:            #b91c1c;
+  --color-on-error-container:         #fee2e2;
+
+  /* Background */
+  --color-background:                 #0b0f17;
+  --color-on-background:              #f1f5f9;
+  --color-surface-variant:            #1e293b;
+
+  /* Fonts */
+  --font-manrope:  'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-hanken:   'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Custom Spacing & Typography Utilities matching the design system */
+/* ============================================================
+   ROOT VARIABLES (layout + sidebar)
+   ============================================================ */
 :root {
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2.5rem;
-  --gutter-desktop: 1.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1.25rem;
+  --space-xl: 2rem;
+
+  /* Sidebar width — toggled by JS via data-sidebar attribute */
+  --sidebar-width: 15rem;            /* 240px expanded - compact & clean */
+  --sidebar-collapsed-width: 3.5rem; /* 56px collapsed */
+  --sidebar-transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================================
+   THEME-AWARE SEMANTIC CSS VARIABLES
+   ============================================================ */
+:root,
+[data-theme="dark"] {
+  --c-bg:             #0b0f17;
+  --c-bg-card:        #111622;
+  --c-bg-card-hover:  #161c2b;
+  --c-bg-elevated:    #161c2b;
+  --c-bg-high:        #1d2436;
+  --c-bg-highest:     #252e42;
+  --c-bg-subtle:      #070a10;
+  
+  --c-text:           #f1f5f9;
+  --c-text-muted:     #94a3b8;
+  --c-text-subtle:    #64748b;
+  
+  --c-border:         rgba(255, 255, 255, 0.08);
+  --c-border-subtle:  rgba(255, 255, 255, 0.04);
+  --c-border-hover:   rgba(255, 255, 255, 0.16);
+  --c-border-focus:   rgba(245, 158, 11, 0.5);
+  
+  --c-hover-bg:       rgba(255, 255, 255, 0.05);
+  --c-active-bg:      rgba(245, 158, 11, 0.12);
+  --c-active-text:    #fbbf24;
+  --c-active-border:  rgba(245, 158, 11, 0.25);
+  
+  --c-accent:         #f59e0b;
+  --c-accent-hover:   #d97706;
+  --c-accent-on:      #451a03;
+  --c-green:          #10b981;
+  --c-green-bg:       rgba(16, 185, 129, 0.12);
+  --c-red:            #f87171;
+  --c-red-bg:         rgba(239, 68, 68, 0.12);
+  --c-blue:           #60a5fa;
+  --c-blue-bg:        rgba(96, 165, 250, 0.12);
+  --c-amber:          #f59e0b;
+  --c-amber-bg:       rgba(245, 158, 11, 0.12);
+}
+
+[data-theme="light"] {
+  --c-bg:             #f8fafc;
+  --c-bg-card:        #ffffff;
+  --c-bg-card-hover:  #f8fafc;
+  --c-bg-elevated:    #ffffff;
+  --c-bg-high:        #f1f5f9;
+  --c-bg-highest:     #e2e8f0;
+  --c-bg-subtle:      #f1f5f9;
+  
+  --c-text:           #0f172a;
+  --c-text-muted:     #475569;
+  --c-text-subtle:    #64748b;
+  
+  --c-border:         #e2e8f0;
+  --c-border-subtle:  #edf2f7;
+  --c-border-hover:   #cbd5e1;
+  --c-border-focus:   rgba(217, 119, 6, 0.5);
+  
+  --c-hover-bg:       #f1f5f9;
+  --c-active-bg:      #fef3c7;
+  --c-active-text:    #92400e;
+  --c-active-border:  #fcd34d;
+  
+  --c-accent:         #d97706;
+  --c-accent-hover:   #b45309;
+  --c-accent-on:      #ffffff;
+  --c-green:          #059669;
+  --c-green-bg:       #ecfdf5;
+  --c-red:            #dc2626;
+  --c-red-bg:         #fef2f2;
+  --c-blue:           #2563eb;
+  --c-blue-bg:        #eff6ff;
+  --c-amber:          #d97706;
+  --c-amber-bg:       #fef3c7;
+
+  color-scheme: light;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
 body {
-  font-family: 'Hanken Grotesk', sans-serif;
-  background-color: #0f131c;
-  color: #dfe2ee;
+  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--c-bg);
+  color: var(--c-text);
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
-}
-
-.font-headline-lg {
-  font-family: 'Manrope', sans-serif;
-  font-size: 28px;
-  line-height: 36px;
-  letter-spacing: -0.015em;
-  font-weight: 600;
-}
-
-.font-headline-md {
-  font-family: 'Manrope', sans-serif;
-  font-size: 20px;
-  line-height: 28px;
-  letter-spacing: -0.01em;
-  font-weight: 600;
-}
-
-.font-headline-sm {
-  font-family: 'Manrope', sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: -0.005em;
-  font-weight: 600;
-}
-
-.font-body-lg {
-  font-family: 'Hanken Grotesk', sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-}
-
-.font-body-md {
-  font-family: 'Hanken Grotesk', sans-serif;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 400;
-}
-
-.font-body-sm {
-  font-family: 'Hanken Grotesk', sans-serif;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 400;
-}
-
-.font-label-md {
-  font-family: 'Hanken Grotesk', sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 150ms ease, color 150ms ease;
   font-size: 13px;
-  line-height: 18px;
-  letter-spacing: 0.01em;
-  font-weight: 500;
+  line-height: 1.45;
 }
 
-.font-label-sm {
-  font-family: 'Hanken Grotesk', sans-serif;
+/* Headings use Manrope */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+/* ============================================================
+   LIGHT THEME OVERRIDES FOR LEGACY CLASSNAMES
+   Ensures seamless contrast and NEVER a black hover state in light mode
+   ============================================================ */
+[data-theme="light"] #vanguard-sales-app {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Sidebar in Light Mode */
+[data-theme="light"] #main-sidebar {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] #sidebar-brand-header {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] #sidebar-nav button:not(.sidebar-active) {
+  color: #475569 !important;
+  background-color: transparent !important;
+}
+[data-theme="light"] #sidebar-nav button:not(.sidebar-active):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] #sidebar-nav button.sidebar-active {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+[data-theme="light"] aside button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Top Header in Light Mode */
+[data-theme="light"] #main-top-header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Container / Surface Overrides in Light Mode */
+[data-theme="light"] .bg-\[\#181c24\],
+[data-theme="light"] .bg-\[\#1c2028\],
+[data-theme="light"] .bg-\[\#262a33\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .bg-\[\#0a0e16\],
+[data-theme="light"] .bg-\[\#0f131c\] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .bg-\[\#31353e\] {
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* CRITICAL: FIX ALL HOVER STATES IN LIGHT MODE SO NOTHING TURNS BLACK */
+[data-theme="light"] .hover\:bg-\[\#262a33\]:hover,
+[data-theme="light"] .hover\:bg-\[\#1c2028\]:hover,
+[data-theme="light"] .hover\:bg-\[\#31353e\]:hover,
+[data-theme="light"] .hover\:bg-\[\#0a0e16\]:hover,
+[data-theme="light"] .hover\:bg-\[\#181c24\]:hover,
+[data-theme="light"] .hover\:bg-white\/5:hover,
+[data-theme="light"] .hover\:bg-white\/10:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Text overrides in Light Mode */
+[data-theme="light"] .text-\[\#dfe2ee\] {
+  color: #0f172a !important;
+}
+[data-theme="light"] .text-\[\#d0c5af\] {
+  color: #475569 !important;
+}
+[data-theme="light"] .text-\[\#99907c\],
+[data-theme="light"] .text-\[\#bcc7de\] {
+  color: #64748b !important;
+}
+
+/* Border overrides in Light Mode */
+[data-theme="light"] .border-white\/5,
+[data-theme="light"] .border-white\/8,
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-\[\#31353e\]\/40,
+[data-theme="light"] .border-\[\#31353e\]\/30,
+[data-theme="light"] .border-\[\#31353e\]\/20,
+[data-theme="light"] .border-\[\#31353e\] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Main content area */
+[data-theme="light"] main {
+  background-color: #f8fafc !important;
+}
+
+/* Input / form controls in Light Mode */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: #d97706 !important;
+  background-color: #ffffff !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Table header in Light Mode */
+[data-theme="light"] thead {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Modals in Light Mode */
+[data-theme="light"] #reject-lead-modal-content,
+[data-theme="light"] #version-history-modal-content {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   B2B SAAS UTILITIES & SHORTCUTS
+   ============================================================ */
+.crm-card {
+  background-color: var(--c-bg-card);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.crm-card:hover {
+  border-color: var(--c-border-hover);
+}
+
+.crm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
   font-size: 11px;
-  line-height: 14px;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.crm-badge-amber {
+  background-color: var(--c-amber-bg);
+  color: var(--c-amber);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.crm-badge-green {
+  background-color: var(--c-green-bg);
+  color: var(--c-green);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.crm-badge-blue {
+  background-color: var(--c-blue-bg);
+  color: var(--c-blue);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.crm-badge-red {
+  background-color: var(--c-red-bg);
+  color: var(--c-red);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.crm-badge-neutral {
+  background-color: var(--c-hover-bg);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+}
+
+/* ============================================================
+   APPROVED VIEW STRUCTURAL UTILITIES
+   These replace Tailwind arbitrary var() patterns which don't
+   work at build time in Tailwind v4.
+   ============================================================ */
+
+/* Background utilities */
+.bg-card         { background-color: var(--c-bg-card); }
+.bg-subtle       { background-color: var(--c-bg-subtle); }
+.bg-elevated     { background-color: var(--c-bg-elevated); }
+.bg-hover        { background-color: var(--c-hover-bg); }
+.bg-active       { background-color: var(--c-active-bg); }
+.bg-amber-tint   { background-color: var(--c-amber-bg); }
+.bg-green-tint   { background-color: var(--c-green-bg); }
+.bg-red-tint     { background-color: var(--c-red-bg); }
+.bg-blue-tint    { background-color: var(--c-blue-bg); }
+
+/* Text utilities */
+.text-primary    { color: var(--c-text); }
+.text-muted      { color: var(--c-text-muted); }
+.text-subtle     { color: var(--c-text-subtle); }
+.text-accent     { color: var(--c-accent); }
+.text-green      { color: var(--c-green); }
+.text-red        { color: var(--c-red); }
+.text-blue       { color: var(--c-blue); }
+.text-amber      { color: var(--c-amber); }
+
+/* Border utilities */
+.border-base     { border-color: var(--c-border); }
+.border-subtle   { border-color: var(--c-border-subtle); }
+.border-hover    { border-color: var(--c-border-hover); }
+.border-accent   { border-color: var(--c-accent); }
+
+/* Filter pill active state */
+.filter-active {
+  background-color: var(--c-active-bg);
+  color: var(--c-active-text);
+  border: 1px solid var(--c-active-border);
   font-weight: 600;
 }
+.filter-inactive {
+  background-color: var(--c-bg-card);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+}
+.filter-inactive:hover {
+  background-color: var(--c-hover-bg);
+  color: var(--c-text);
+  border-color: var(--c-border-hover);
+}
 
-.font-code-sm {
-  font-family: 'Hanken Grotesk', monospace;
+/* Row hover for list-style tables */
+.row-hover:hover {
+  background-color: var(--c-hover-bg);
+}
+.row-active {
+  background-color: var(--c-bg-elevated);
+}
+
+/* Approved view accordion */
+.accordion-body {
+  background-color: var(--c-bg-subtle);
+  border-top: 1px solid var(--c-border);
+}
+
+/* Input using CSS vars */
+.input-crm {
+  background-color: var(--c-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  border-radius: 6px;
+  padding: 0.375rem 0.5rem;
+  font-size: 11px;
+  transition: border-color 120ms ease;
+}
+.input-crm.has-icon {
+  padding-left: 1.75rem;
+}
+.input-crm:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+.input-crm::placeholder {
+  color: var(--c-text-subtle);
+}
+
+/* ============================================================
+   SCROLLBARS (theme-aware)
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-outline); }
+
+/* ============================================================
+   SKELETON LOADER (theme-aware shimmer)
+   ============================================================ */
+@keyframes crm-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.crm-skeleton {
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--c-border) 25%,
+    var(--c-bg-card) 50%,
+    var(--c-border) 75%
+  );
+  background-size: 200% 100%;
+  animation: crm-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ============================================================
+   FOCUS RING UTILITY
+   ============================================================ */
+.crm-focus:focus-visible {
+  outline: 2px solid var(--c-amber);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   SIDEBAR TRANSITIONS & TOOLTIPS
+   ============================================================ */
+#main-sidebar {
+  transition: var(--sidebar-transition);
+  overflow: hidden;
+}
+#main-content-wrapper {
+  transition: padding-left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+#main-top-header {
+  transition: left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-tooltip {
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--c-bg-card);
+  color: var(--c-text);
+  font-family: 'Hanken Grotesk', sans-serif;
   font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.02em;
   font-weight: 500;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.sidebar-nav-item:hover .sidebar-tooltip {
+  opacity: 1;
 }
-::-webkit-scrollbar-track {
-  background: #0f131c;
-}
-::-webkit-scrollbar-thumb {
-  background: #262a33;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #31353e;
-}
-
