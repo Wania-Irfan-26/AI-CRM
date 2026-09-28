@@ -1,3 +1,4 @@
+import os
 from email.mime.text import MIMEText
 from pathlib import Path
 import base64
@@ -12,8 +13,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly"
 ]
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-TOKEN_FILE = BASE_DIR / "secrets" / "gmail-token.json"
+TOKEN_FILE = Path(os.getenv("GMAIL_TOKEN_FILE", "secrets/gmail-token.json"))
 
 
 def get_gmail_service():
