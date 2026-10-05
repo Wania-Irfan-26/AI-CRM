@@ -35,13 +35,17 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 app = FastAPI(title="CRM API", version="1.0.0")
 
 # ---------------------------------------------------------------------------
-# CORS — allow the Vite dev server (port 3000) and any localhost variant
+# CORS — read allowed origins from env so Vercel/other deployments work
 # ---------------------------------------------------------------------------
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+_extra_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        *_extra_origins,
     ],
     allow_credentials=True,
     allow_methods=["*"],
