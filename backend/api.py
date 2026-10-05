@@ -14,9 +14,12 @@ GOOGLE_SERVICE_ACCOUNT_FILE inside .env.
 """
 
 import os
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+
+logger = logging.getLogger("crm_api")
 
 import gspread
 from dotenv import load_dotenv
@@ -156,10 +159,11 @@ def _open_worksheet() -> gspread.Worksheet:
             status_code=500,
             detail=f"Worksheet '{worksheet_name}' not found in the spreadsheet.",
         )
-    except Exception:
+    except Exception as exc:
+        logger.error("Failed to connect to Google Sheets: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="Failed to connect to Google Sheets.",
+            detail=f"Failed to connect to Google Sheets: {exc}",
         )
 
 
@@ -339,17 +343,14 @@ def _build_follow_up(row: dict) -> dict | None:
 
 @app.get("/api/leads")
 def get_leads():
-    """Return all leads with status = AI_COMPLETED.
-
-    These are leads that have been fully processed by the CrewAI pipeline
-    and are ready for human review and approval.
-    """
+    """Return all leads with status = AI_COMPLETED."""
     worksheet = _open_worksheet()
 
     try:
         all_values = worksheet.get_all_values()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to read data from Google Sheet.")
+    except Exception as exc:
+        logger.error("Failed to read sheet data: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to read data from Google Sheet: {exc}")
 
     if not all_values:
         return {"leads": []}
